@@ -1,0 +1,9 @@
+\section{Mã lệnh tạo bảng (DDL - Data Definition Language)}
+
+Mã nguồn chuẩn nằm tại \texttt{database/schema.sql}, dùng SQL Server 2016 trở lên và chạy một lần trên cơ sở dữ liệu trống với schema mặc định \texttt{dbo}. Báo cáo nạp trực tiếp file này để tránh sai lệch giữa mã thực thi và nội dung trình bày. Đây là script khởi tạo, không phải migration cho cơ sở dữ liệu đã có dữ liệu.
+
+\lstinputlisting[style=sqlstyle]{database/schema.sql}
+
+Các khóa ngoại sử dụng \texttt{ON DELETE NO ACTION}. Chỉ mục duy nhất có điều kiện cho phép nhiều giá trị NULL ở \texttt{WalletAddress} và \texttt{SuiTxDigest}, nhưng ngăn trùng giá trị đã được cung cấp.
+
+\textbf{Giới hạn triển khai:} Script triển khai cấu trúc, khóa, miền giá trị và chỉ mục. Script chưa triển khai phân quyền ghi sổ cái, tự động cập nhật số dư, kiểm tra chu trình quản lý, kiểm tra liên kết cùng Merchant hay cơ chế đồng bộ blockchain. Các yêu cầu này được nêu rõ ở Chương 1 và cần triển khai tại tầng dịch vụ/quyền truy cập trước khi vận hành.

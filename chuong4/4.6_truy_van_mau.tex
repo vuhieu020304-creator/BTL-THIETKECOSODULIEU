@@ -1,0 +1,49 @@
+\section{Một số câu truy vấn mẫu}
+
+Dưới đây là các câu truy vấn T-SQL tiêu biểu để kiểm chứng thiết kế cơ sở dữ liệu trên hệ quản trị SQL Server.
+
+\subsection{Truy vấn 1: Xem lịch sử giao dịch điểm của một khách hàng tại một cửa hàng}
+\begin{lstlisting}[style=sqlstyle]
+SELECT 
+    ct.TransactionID,
+    ct.TransactionType,
+    ct.Amount,
+    ct.CreatedAt
+FROM CREDIT_TRANSACTION ct
+JOIN CREDIT c ON ct.CreditID = c.CreditID
+WHERE c.CustomerID = 'CUST_UUID_001'
+  AND c.MerchantID = 'MERCH_UUID_002'
+ORDER BY ct.CreatedAt DESC, ct.TransactionID DESC;
+\end{lstlisting}
+
+\subsection{Truy vấn 2: Tra cứu số dư điểm hiện tại của khách hàng tại các cửa hàng đang hoạt động}
+\begin{lstlisting}[style=sqlstyle]
+SELECT 
+    m.BusinessName,
+    c.AvailableBalance
+FROM CREDIT c
+JOIN MERCHANT m ON c.MerchantID = m.MerchantID
+WHERE c.CustomerID = 'CUST_UUID_001'
+  AND m.Status = 'Active'
+ORDER BY c.AvailableBalance DESC, c.MerchantID;
+\end{lstlisting}
+
+\subsection{Truy vấn 3: Thống kê tổng số điểm đã phát hành theo từng chiến dịch có phát sinh tích điểm trong tháng hiện tại}
+\begin{lstlisting}[style=sqlstyle]
+DECLARE @MonthStart DATETIME = DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1);
+
+SELECT 
+    camp.CampaignName,
+    COUNT(ct.TransactionID) AS TotalTransactions,
+    SUM(ct.Amount) AS TotalPointsIssued
+FROM CREDIT_TRANSACTION ct
+JOIN CAMPAIGN camp ON ct.CampaignID = camp.CampaignID
+WHERE camp.MerchantID = 'MERCH_UUID_002'
+  AND ct.TransactionType = 'Earn'
+  AND ct.CreatedAt >= @MonthStart
+  AND ct.CreatedAt < DATEADD(MONTH, 1, @MonthStart)
+GROUP BY camp.CampaignID, camp.CampaignName;
+\end{lstlisting}
+Khoảng thời gian nửa kín ở truy vấn 3 giữ cột CreatedAt nguyên dạng để bộ tối ưu có thể tận dụng chỉ mục phù hợp. Truy vấn hiện có chưa bảo đảm kế hoạch seek; cần kiểm tra execution plan.
+
+Tổng điểm phát hành ở truy vấn 3 chỉ cộng giao dịch Earn, chưa trừ các giao dịch hoàn trả. Chiến dịch không có Earn trong tháng không xuất hiện do sử dụng INNER JOIN. Các mã khách hàng và cửa hàng trong ví dụ cần được thay bằng mã tồn tại trong dữ liệu thử.

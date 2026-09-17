@@ -1,0 +1,17 @@
+\section{Chiến lược Đánh chỉ mục}
+
+Chỉ mục giảm chi phí đọc ở một số truy vấn nhưng tăng dung lượng và chi phí ghi. Việc lựa chọn phải dựa trên bộ lọc, phép nối, thứ tự kết quả và số liệu thực thi.
+
+\subsection{Chỉ mục triển khai}
+\begin{itemize}
+    \item Mọi PK được khai báo \texttt{CLUSTERED} trong \texttt{database/schema.sql}. UNIQUE tạo chỉ mục hỗ trợ các khóa nghiệp vụ; không tạo thêm chỉ mục Email trùng chức năng.
+    \item SQL Server không tự tạo chỉ mục cho FK. DDL bổ sung chỉ mục cho TenantID của MERCHANT; MerchantID, RoleID, ManagerID của USER; MerchantID của API\_CREDENTIAL, CAMPAIGN, CREDIT; CampaignID của REWARD\_RULE và CREDIT\_TRANSACTION.
+    \item CREDIT dùng UNIQUE \texttt{(CustomerID, MerchantID)}, đồng thời hỗ trợ tra cứu theo CustomerID ở cột dẫn đầu.
+    \item Chỉ mục \texttt{(CreditID, CreatedAt DESC)} hỗ trợ lọc lịch sử một ví theo thời gian. Không tạo riêng chỉ mục CreditID trùng tiền tố.
+    \item Hai chỉ mục duy nhất có điều kiện bảo vệ WalletAddress và SuiTxDigest khi khác NULL.
+\end{itemize}
+
+\subsection{Đánh giá và giới hạn}
+Tỷ lệ $NDV(A)/|R|$ biểu diễn mức phân biệt giá trị, không phải tỷ lệ dòng thỏa một điều kiện cụ thể. Hiệu quả chỉ mục còn phụ thuộc phân bố dữ liệu, số dòng trả về và chi phí truy cập.
+
+Chưa tạo chỉ mục đơn trên Status (Merchant: Active/Suspended; Campaign: Draft/Active/Expired) hoặc TransactionType (Earn/Redeem/Refund). Miền giá trị nhỏ không có nghĩa chỉ mục luôn vô ích: chỉ mục ghép hoặc có điều kiện vẫn có thể hữu ích với workload phù hợp. Cần kiểm tra execution plan, statistics và chi phí ghi trước khi bổ sung.
